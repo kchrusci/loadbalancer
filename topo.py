@@ -5,7 +5,7 @@ Adding the 'topos' dict with a key/value pair to generate our newly defined
 topology enables one to pass in '--topo=mytopo' from the command line.
 """
 from mininet.topo import Topo
-
+from mininet.net import Mininet
 
 class MyTopo(Topo):
 
@@ -14,22 +14,22 @@ class MyTopo(Topo):
         Topo.__init__(self)
 
         # Add hosts and switches
-        host1 = self.addHost('h1')
-        host2 = self.addHost('h2')
-        host3 = self.addHost('h3')
-        server1 = self.addHost('s1')
-        server2 = self.addHost('s2')
-        server3 = self.addHost('s3')
+        host1 = net.addHost('h1', ip='192.168.1.1')
+        host2 = net.addHost('h2', ip='192.168.1.2')
+        host3 = net.addHost('h3', ip='192.168.1.3')
+        server1 = net.addHost('s1', ip='192.168.1.11')
+        server2 = net.addHost('s2', ip='192.168.1.12')
+        server3 = net.addHost('s3', ip='192.168.1.13')
 
-        lb = self.addSwitch('lb')
+        lb = net.addSwitch('lb')
 
         # Add links
-        self.addLink(host1, lb)
-        self.addLink(host2, lb)
-        self.addLink(host3, lb)
-        self.addLink(lb, server1)
-        self.addLink(lb, server2)
-        self.addLink(lb, server3)
+        net.addLink(host1, lb)
+        net.addLink(host2, lb)
+        net.addLink(host3, lb)
+        net.addLink(lb, server1)
+        net.addLink(lb, server2)
+        net.addLink(lb, server3)
 
 
 topos = {'mytopo': (lambda: MyTopo())}
