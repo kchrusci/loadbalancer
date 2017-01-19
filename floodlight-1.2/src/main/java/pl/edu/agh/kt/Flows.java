@@ -48,15 +48,34 @@ public class Flows {
 		logger.info("Flows() begin/end");
 	}
 
-	public static void sendPacketOut(IOFSwitch sw) {
+	public static void sendPacketOut(IOFSwitch sw, OFPort inport, OFPort outport, FloodlightContext cntx) {
+		Ethernet eth = IFloodlightProviderService.bcStore.get(cntx, IFloodlightProviderService.CONTEXT_PI_PAYLOAD);
+		if(eth.getEtherType()==EthType.IPv4){
+		IPv4 ip = (IPv4) eth.getPayload();
+		MacAddress srcMac = eth.getSourceMACAddress();
+		IPv4Address srcIp = ip.getSourceAddress();
+		MacAddress dstMac = eth.getDestinationMACAddress(); 
+		IPv4Address dstIp = ip.getDestinationAddress();
+        TCP tcp = (TCP) ip.getPayload();
+        
+        TransportPort srcPort = tcp.getSourcePort();
+        TransportPort dstPort = tcp.getDestinationPort();
+		
+		}
+		
 		Ethernet l2 = new Ethernet();
-		l2.setSourceMACAddress(MacAddress.of("00:00:00:00:00:01"));
-		l2.setDestinationMACAddress(MacAddress.BROADCAST);
+		// Switch address
+		l2.setSourceMACAddress(MacAddress.of("00:00:00:00:00:10"));
+		
+		if(dstIp == IPv4Address.of("192.168.1.11")){
+			
+		}
+		l2.setDestinationMACAddress(MacAddress.BROADCAST); // Address IP
 		l2.setEtherType(EthType.IPv4);
 		
 		IPv4 l3 = new IPv4();
 		l3.setSourceAddress(IPv4Address.of("192.168.1.1"));
-		l3.setDestinationAddress(IPv4Address.of("192.168.1.255"));
+		l3.setDestinationAddress(IPv4Address.of("192.168.1.2"));
 		l3.setTtl((byte) 64);
 		l3.setProtocol(IpProtocol.UDP);
 		
