@@ -43,6 +43,8 @@ public class Flows {
 	protected static boolean FLOWMOD_DEFAULT_MATCH_MAC = true;
 	protected static boolean FLOWMOD_DEFAULT_MATCH_IP_ADDR = true;
 	protected static boolean FLOWMOD_DEFAULT_MATCH_TRANSPORT = true;
+	
+	public int i=0;
 
 	public Flows() {
 		logger.info("Flows() begin/end");
@@ -50,38 +52,117 @@ public class Flows {
 
 	public static void sendPacketOut(IOFSwitch sw, OFPort inport, OFPort outport, FloodlightContext cntx) {
 		Ethernet eth = IFloodlightProviderService.bcStore.get(cntx, IFloodlightProviderService.CONTEXT_PI_PAYLOAD);
+		
+		Ethernet l2 = new Ethernet(); //create a new l2 frame with LB's MAC
+		l2.setSourceMACAddress(MacAddress.of("00:00:00:00:00:10")); //always the same
+		
+		//define variables independent of l3
+		MacAddress srcMac = eth.getSourceMACAddress();
+		MacAddress dstMac = eth.getDestinationMACAddress(); 
+		
+		//let's make it static
+		TransportPort srcPort = 0;
+		TransportPort dstPort = 0;
+		
 		if(eth.getEtherType()==EthType.IPv4){
 		IPv4 ip = (IPv4) eth.getPayload();
-		MacAddress srcMac = eth.getSourceMACAddress();
 		IPv4Address srcIp = ip.getSourceAddress();
-		MacAddress dstMac = eth.getDestinationMACAddress(); 
 		IPv4Address dstIp = ip.getDestinationAddress();
-        TCP tcp = (TCP) ip.getPayload();
-        
-        TransportPort srcPort = tcp.getSourcePort();
-        TransportPort dstPort = tcp.getDestinationPort();
+		IPv4 l3 = new IPv4(); //create a new l3 packet
 		
+			//port type nr neccessary to detect http requests and responses
+			if (ip.getProtocol().equals(IpProtocol.TCP)) {
+			TCP tcp = (TCP) ip.getPayload();
+			srcPort = tcp.getSourcePort();
+			dstPort = tcp.getDestinationPort();
+			TCP l4 = new TCP();
+			l3.setProtocol(IpProtocol.TCP);
+			}
+			//let's define port for UDP too
+			else if (ip.getProtocol().equals(IpProtocol.UDP)) {
+	        UDP udp = (UDP) ip.getPayload();
+	        srcPort = udp.getSourcePort();
+	        dstPort = udp.getDestinationPort();
+			UDP l4 = new UDP();
+			l3.setProtocol(IpProtocol.UDP);
+			}
+			//we have to put something if it's something else than TCP/UDP
+			else{
+				UDP l4 = new UDP();
+				l3.setProtocol(IpProtocol.UDP);
+			}
+			//we never change source and destination ports -- they remain unmodified
+			l4.setSourcePort(srcPort); 
+			l4.setDestinationPort(dstPort);
+			
+			//if request to server -> swap destination address
+			if((dstPort==80 || dstPort==8080) && dstIP==IPv4Address.of("192.168.1.10")){
+				//0 1 2
+				if(i%6<3){
+					dstIP=IPv4Address.of("192.168.1.11");
+				}
+				//5
+				else if(i%6=5){
+					dstIP=IPv4Address.of("192.168.1.13");
+				}
+				//3 4
+				else{
+					dstIP=IPv4Address.of("192.168.1.12");
+				}
+				i++;
+			}
+		
+		//specify l2 dstMac based on IP 
+		if(dstIp == IPv4Address.of("192.168.1.1")){
+			l2.setDestinationMACAddress(MacAddress.of("00:00:00:00:00:01"));
+		}
+		else if(dstIp == IPv4Address.of("192.168.1.2")){
+			l2.setDestinationMACAddress(MacAddress.of("00:00:00:00:00:02"));
+		}
+		else if(dstIp == IPv4Address.of("192.168.1.3")){
+			l2.setDestinationMACAddress(MacAddress.of("00:00:00:00:00:03"));
+		}
+		//we swapped IP from .10 to .1x, so it should do the trick
+		else if(dstIp == IPv4Address.of("192.168.1.11")){
+			l2.setDestinationMACAddress(MacAddress.of("00:00:00:00:00:11"));
+		}
+		else if(dstIp == IPv4Address.of("192.168.1.12")){
+			l2.setDestinationMACAddress(MacAddress.of("00:00:00:00:00:12"));
+		}
+		else if(dstIp == IPv4Address.of("192.168.1.13")){
+			l2.setDestinationMACAddress(MacAddress.of("00:00:00:00:00:13"));
 		}
 		
-		Ethernet l2 = new Ethernet();
-		// Switch address
-		l2.setSourceMACAddress(MacAddress.of("00:00:00:00:00:10"));
+		//let's assume that it can be someting else and send it to broadcast
+		else{
+			l2.setDestinationMACAddress(MacAddress.of("ff:ff:ff:ff:ff:ff"));
+		}
 		
-		if(dstIp == IPv4Address.of("192.168.1.11")){
+		l2.setEtherType(EthType.IPv4);
+		//l2 finished
+		
+		l3.setDestinationAddress(dstIP);
+		
+		//we specified an IP protocol in TCP/UDP section so only srcIP should be swapped 
+		//if needed -- that means that it is a response from one of "servers"
+		if((srcPort==80 || srcPort==8080) && (srcIP==IPv4Address.of("192.168.1.11") 
+				|| srcIP==IPv4Address.of("192.168.1.12") || srcIP==IPv4Address.of("192.168.1.13")){
+			
+			srcIP=IPv4Address.of("192.168.1.10");
+		}
+
+		l3.setSourceAddress(srcIP);
+		l3.setTtl((byte) 64);
+		
+		} //this is the end for case: ethertype == IPv4
+		
+		//ARP
+		else if(eth.getEtherType()==EthType.ARP){
+
+		}
+		else {
 			
 		}
-		l2.setDestinationMACAddress(MacAddress.BROADCAST); // Address IP
-		l2.setEtherType(EthType.IPv4);
-		
-		IPv4 l3 = new IPv4();
-		l3.setSourceAddress(IPv4Address.of("192.168.1.1"));
-		l3.setDestinationAddress(IPv4Address.of("192.168.1.2"));
-		l3.setTtl((byte) 64);
-		l3.setProtocol(IpProtocol.UDP);
-		
-		UDP l4 = new UDP();
-		l4.setSourcePort(TransportPort.of(65003));
-		l4.setDestinationPort(TransportPort.of(53));
 		
 		Data l7 = new Data();
 		l7.setData(new byte[1000]);
