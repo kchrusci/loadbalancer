@@ -377,7 +377,7 @@ public class Flows {
 		
 		
 		
-		// TODO Detect switch type and match to create hardware-implemented flow
+		// Detect switch type and match to create hardware-implemented flow
 		if (eth.getEtherType() == EthType.IPv4) { /*
 													 * shallow check for
 													 * equality is okay for

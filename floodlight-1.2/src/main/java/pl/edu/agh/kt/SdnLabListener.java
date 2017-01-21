@@ -49,10 +49,7 @@ public class SdnLabListener implements IFloodlightModule, IOFMessageListener {
 			FloodlightContext cntx) {
 
 		logger.info("************* NEW PACKET IN *************");
-//		PacketExtractor extractor = new PacketExtractor();
-//		extractor.packetExtract(cntx);
 
-		//TODO LAB 5
 		//sending PacketOut
 		Flows.sendPacketOut(sw, cntx);
 		OFPacketIn pin = (OFPacketIn) msg;
