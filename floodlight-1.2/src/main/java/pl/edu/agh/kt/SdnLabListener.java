@@ -54,7 +54,7 @@ public class SdnLabListener implements IFloodlightModule, IOFMessageListener {
 
 		//TODO LAB 5
 		//sending PacketOut
-		Flows.sendPacketOut(sw);
+		Flows.sendPacketOut(sw, cntx);
 		OFPacketIn pin = (OFPacketIn) msg;
 		OFPort outPort=OFPort.of(0);
 		if (pin.getInPort() == OFPort.of(1)){
