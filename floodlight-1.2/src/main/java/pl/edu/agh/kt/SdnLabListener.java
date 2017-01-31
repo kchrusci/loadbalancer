@@ -6,7 +6,6 @@ import java.util.Map;
 import org.projectfloodlight.openflow.protocol.OFMessage;
 import org.projectfloodlight.openflow.protocol.OFPacketIn;
 import org.projectfloodlight.openflow.protocol.OFType;
-import org.projectfloodlight.openflow.types.MacAddress;
 import org.projectfloodlight.openflow.types.OFPort;
 
 import net.floodlightcontroller.core.FloodlightContext;
@@ -50,30 +49,20 @@ public class SdnLabListener implements IFloodlightModule, IOFMessageListener {
 			FloodlightContext cntx) {
 
 		logger.info("************* NEW PACKET IN *************");
+//		PacketExtractor extractor = new PacketExtractor();
+//		extractor.packetExtract(cntx);
 
+		//TODO LAB 5
 		//sending PacketOut
-		Flows.sendPacketOut(sw, cntx);
+		Flows.sendPacketOut(sw);
 		OFPacketIn pin = (OFPacketIn) msg;
-		MacAddress macAddr = Flows.getDestinationMacAddress(cntx);
-		System.out.println(macAddr);
 		OFPort outPort=OFPort.of(0);
+		if (pin.getInPort() == OFPort.of(1)){
+		outPort=OFPort.of(2);
+		} else
+		outPort=OFPort.of(1);
+		Flows.simpleAdd(sw, pin, cntx, outPort);
 		
-		if (macAddr.toString().contains("01")) {
-			outPort=OFPort.of(1);
-		} else if (macAddr.toString().contains("02")) {
-			outPort=OFPort.of(2);
-		} else if (macAddr.toString().contains("03")) {
-			outPort=OFPort.of(3);
-		} else if (macAddr.toString().contains("11")) {
-			outPort=OFPort.of(4);
-		} else if (macAddr.toString().contains("12")) {
-			outPort=OFPort.of(5);
-		} else if (macAddr.toString().contains("13")) {
-			outPort=OFPort.of(6);
-		}
-
-		System.out.println(outPort);
-		Flows.simpleAdd(sw, pin, cntx, outPort);		
 		
 		return Command.STOP;
 	}
