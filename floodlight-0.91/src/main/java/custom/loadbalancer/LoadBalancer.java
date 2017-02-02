@@ -83,7 +83,8 @@ public class LoadBalancer implements IOFMessageListener, IFloodlightModule {
 	
 	final static Server[] SERVERS = {
 		new Server("192.168.1.11", "00:00:00:00:00:11", (short)1),
-		new Server("192.168.1.12", "00:00:00:00:00:12", (short)2)
+		new Server("192.168.1.12", "00:00:00:00:00:12", (short)2),
+		new Server("192.168.1.12", "00:00:00:00:00:12", (short)3)
 	};
 	private int lastServer = 0;
 	
